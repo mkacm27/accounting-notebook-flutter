@@ -108,24 +108,20 @@ class _RichTextEditorState extends State<RichTextEditor> {
   void _insertTool(String toolType, Map<String, dynamic> toolData) {
     try {
       final index = _controller.selection.baseOffset;
-      
-      // Insert a custom embed
+
       _controller.document.insert(index, '\n');
       _controller.document.insert(index + 1, CustomEmbed(toolType, toolData));
       _controller.document.insert(index + 2, '\n');
-      
-      // Move cursor after the embed
+
       _controller.updateSelection(
         TextSelection.collapsed(offset: index + 3),
         ChangeSource.local,
       );
 
-      // Save the content
       final content = jsonEncode(_controller.document.toDelta().toJson());
       widget.onSave(content);
     } catch (e) {
       print('Error inserting tool: $e');
-      // Fallback: just insert text description of the tool
       final index = _controller.selection.baseOffset;
       _controller.document.insert(index, '\n[$toolType Tool]\n');
     }
@@ -136,9 +132,7 @@ class _RichTextEditorState extends State<RichTextEditor> {
       final content = jsonEncode(_controller.document.toDelta().toJson());
       widget.onSave(content);
     } catch (e) {
-      // Handle JSON encoding error
       print('Error saving content: $e');
-      // Try to save as plain text fallback
       final plainText = _controller.document.toPlainText();
       widget.onSave(plainText);
     }
@@ -146,15 +140,12 @@ class _RichTextEditorState extends State<RichTextEditor> {
 
   bool _handleKeyEvent(KeyEvent event) {
     if (event is KeyDownEvent) {
-      // Handle Ctrl+K for tool palette
-      if (event.logicalKey == LogicalKeyboardKey.keyK && 
+      if (event.logicalKey == LogicalKeyboardKey.keyK &&
           HardwareKeyboard.instance.isControlPressed) {
         _showToolPalette();
         return true;
       }
-      
-      // Handle Ctrl+S for save
-      if (event.logicalKey == LogicalKeyboardKey.keyS && 
+      if (event.logicalKey == LogicalKeyboardKey.keyS &&
           HardwareKeyboard.instance.isControlPressed) {
         _saveContent();
         return true;
@@ -168,24 +159,17 @@ class _RichTextEditorState extends State<RichTextEditor> {
       case 'journal':
         return JournalEmbed(
           data: embed.data,
-          onEdit: (newData) {
-            // Update the embed data
-            _insertTool('journal', newData);
-          },
+          onEdit: (newData) => _insertTool('journal', newData),
         );
       case 'amortization':
         return AmortizationEmbed(
           data: embed.data,
-          onEdit: (newData) {
-            _insertTool('amortization', newData);
-          },
+          onEdit: (newData) => _insertTool('amortization', newData),
         );
       case 'customTable':
         return CustomTableEmbed(
           data: embed.data,
-          onEdit: (newData) {
-            _insertTool('customTable', newData);
-          },
+          onEdit: (newData) => _insertTool('customTable', newData),
         );
       default:
         return Container(
@@ -216,57 +200,59 @@ class _RichTextEditorState extends State<RichTextEditor> {
                 ),
               ),
             ),
-            child: QuillToolbar.simple(
-              configurations: QuillSimpleToolbarConfigurations(
-                controller: _controller,
-                multiRowsDisplay: false,
-                showFontFamily: false,
-                showFontSize: false,
-                showSubscript: false,
-                showSuperscript: false,
-                showColorButton: false,
-                showBackgroundColorButton: false,
-                showSearchButton: false,
-                customButtons: [
-                  QuillToolbarCustomButtonOptions(
-                    icon: Icon(Icons.add_circle_outline),
-                    tooltip: 'Insert Tool (Ctrl+K)',
-                    onPressed: _showToolPalette,
-                  ),
-                  QuillToolbarCustomButtonOptions(
-                    icon: Icon(Icons.save),
-                    tooltip: 'Save (Ctrl+S)',
-                    onPressed: _saveContent,
-                  ),
-                ],
-              ),
+            child: QuillSimpleToolbar(
+              controller: _controller,
+              multiRowsDisplay: false,
+              showFontFamily: false,
+              showFontSize: false,
+              showSubscript: false,
+              showSuperscript: false,
+              showColorButton: false,
+              showBackgroundColorButton: false,
+              showSearchButton: false,
+              customButtons: [
+                QuillCustomButton(
+                  icon: Icons.add_circle_outline,
+                  tooltip: 'Insert Tool (Ctrl+K)',
+                  onPressed: _showToolPalette,
+                ),
+                QuillCustomButton(
+                  icon: Icons.save,
+                  tooltip: 'Save (Ctrl+S)',
+                  onPressed: _saveContent,
+                ),
+              ],
             ),
           ),
           // Editor
           Expanded(
             child: Container(
               padding: const EdgeInsets.all(16),
-              child: QuillEditor.basic(
-                configurations: QuillEditorConfigurations(
-                  controller: _controller,
-                  placeholder: 'Start writing your lesson content...\n\nTip: Use the + button or press Ctrl+K to insert accounting tools.',
-                  autoFocus: false,
-                  expands: true,
-                  padding: EdgeInsets.zero,
-                  customStyles: DefaultStyles(
-                    paragraph: DefaultTextBlockStyle(
-                      TextStyle(
-                        fontSize: 16,
-                        height: 1.5,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                      const VerticalSpacing(8, 8),
-                      const VerticalSpacing(0, 0),
-                      null,
+              child: QuillEditor(
+                controller: _controller,
+                focusNode: _focusNode,
+                scrollController: ScrollController(),
+                scrollable: true,
+                autoFocus: false,
+                readOnly: false,
+                expands: true,
+                padding: EdgeInsets.zero,
+                placeholder:
+                    'Start writing your lesson content...\n\nTip: Use the + button or press Ctrl+K to insert accounting tools.',
+                customStyles: DefaultStyles(
+                  paragraph: DefaultTextBlockStyle(
+                    TextStyle(
+                      fontSize: 16,
+                      height: 1.5,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
+                    const VerticalSpacing(8, 8),
+                    const VerticalSpacing(0, 0),
+                    null,
+                    null,
                   ),
-                  embedBuilders: [],
                 ),
+                embedBuilders: [],
               ),
             ),
           ),
