@@ -7,8 +7,6 @@ plugins {
 android {
     namespace = "com.accountingnotebook.app"
     compileSdk = flutter.compileSdkVersion
-    
-    // ? Â–« ÂÊ «·”ÿ— «·„Â„ «·–Ì ÌÕ· „‘ﬂ·… NDK
     ndkVersion = "27.0.12077973"
 
     compileOptions {
