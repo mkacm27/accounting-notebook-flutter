@@ -4,12 +4,6 @@ import 'package:flutter_quill/flutter_quill.dart';
 import '../models/database.dart';
 import 'tools/tool_palette.dart';
 
-// Note: Embed builders are not yet implemented in this version of the code,
-// but the foundation is here.
-// import 'embeds/journal_embed.dart';
-// import 'embeds/amortization_embed.dart';
-// import 'embeds/custom_table_embed.dart';
-
 class RichTextEditor extends StatefulWidget {
   final String initialContent;
   final AppDatabase database;
@@ -141,7 +135,7 @@ class _RichTextEditorState extends State<RichTextEditor> {
                 readOnly: false,
                 placeholder:
                     'Start writing your lesson content...\n\nTip: Use the + button or press Ctrl+K to insert accounting tools.',
-                embedBuilders: [], // For custom embedded widgets
+                embedBuilders: [],
               ),
               focusNode: _focusNode,
               scrollController: _scrollController,
