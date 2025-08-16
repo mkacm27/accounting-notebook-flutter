@@ -31,7 +31,6 @@ class RichTextEditor extends StatefulWidget {
 class _RichTextEditorState extends State<RichTextEditor> {
   late QuillController _controller;
   final FocusNode _focusNode = FocusNode();
-  bool _isToolPaletteVisible = false;
 
   @override
   void initState() {
@@ -81,10 +80,6 @@ class _RichTextEditorState extends State<RichTextEditor> {
   }
 
   void _showToolPalette() {
-    setState(() {
-      _isToolPaletteVisible = true;
-    });
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -92,17 +87,10 @@ class _RichTextEditorState extends State<RichTextEditor> {
       builder: (context) => ToolPalette(
         onToolSelected: _insertTool,
         onClose: () {
-          setState(() {
-            _isToolPaletteVisible = false;
-          });
           Navigator.pop(context);
         },
       ),
-    ).then((_) {
-      setState(() {
-        _isToolPaletteVisible = false;
-      });
-    });
+    );
   }
 
   void _insertTool(String toolType, Map<String, dynamic> toolData) {
@@ -138,126 +126,50 @@ class _RichTextEditorState extends State<RichTextEditor> {
     }
   }
 
-  bool _handleKeyEvent(KeyEvent event) {
-    if (event is KeyDownEvent) {
-      if (event.logicalKey == LogicalKeyboardKey.keyK &&
-          HardwareKeyboard.instance.isControlPressed) {
-        _showToolPalette();
-        return true;
-      }
-      if (event.logicalKey == LogicalKeyboardKey.keyS &&
-          HardwareKeyboard.instance.isControlPressed) {
-        _saveContent();
-        return true;
-      }
-    }
-    return false;
-  }
-
-  Widget _buildCustomEmbed(CustomEmbed embed) {
-    switch (embed.type) {
-      case 'journal':
-        return JournalEmbed(
-          data: embed.data,
-          onEdit: (newData) => _insertTool('journal', newData),
-        );
-      case 'amortization':
-        return AmortizationEmbed(
-          data: embed.data,
-          onEdit: (newData) => _insertTool('amortization', newData),
-        );
-      case 'customTable':
-        return CustomTableEmbed(
-          data: embed.data,
-          onEdit: (newData) => _insertTool('customTable', newData),
-        );
-      default:
-        return Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.grey[200],
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Text('Unknown embed type: ${embed.type}'),
-        );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    return KeyboardListener(
-      focusNode: FocusNode(),
-      onKeyEvent: _handleKeyEvent,
-      child: Column(
-        children: [
-          // Toolbar
-          Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              border: Border(
-                bottom: BorderSide(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                ),
+    return Column(
+      children: [
+        QuillToolbar.simple(
+          configurations: QuillSimpleToolbarConfigurations(
+            controller: _controller,
+            showFontFamily: false,
+            showFontSize: false,
+            showSubscript: false,
+            showSuperscript: false,
+            showColorButton: false,
+            showBackgroundColorButton: false,
+            showSearchButton: false,
+            customButtons: [
+              QuillToolbarCustomButtonOptions(
+                icon: const Icon(Icons.add_circle_outline),
+                tooltip: 'Insert Tool (Ctrl+K)',
+                onPressed: _showToolPalette,
               ),
-            ),
-            child: QuillSimpleToolbar(
-              controller: _controller,
-              multiRowsDisplay: false,
-              showFontFamily: false,
-              showFontSize: false,
-              showSubscript: false,
-              showSuperscript: false,
-              showColorButton: false,
-              showBackgroundColorButton: false,
-              showSearchButton: false,
-              customButtons: [
-                QuillCustomButton(
-                  icon: Icons.add_circle_outline,
-                  tooltip: 'Insert Tool (Ctrl+K)',
-                  onPressed: _showToolPalette,
-                ),
-                QuillCustomButton(
-                  icon: Icons.save,
-                  tooltip: 'Save (Ctrl+S)',
-                  onPressed: _saveContent,
-                ),
-              ],
-            ),
+              QuillToolbarCustomButtonOptions(
+                icon: const Icon(Icons.save),
+                tooltip: 'Save (Ctrl+S)',
+                onPressed: _saveContent,
+              ),
+            ],
           ),
-          // Editor
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              child: QuillEditor(
+        ),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            child: QuillEditor.basic(
+              configurations: QuillEditorConfigurations(
                 controller: _controller,
-                focusNode: _focusNode,
-                scrollController: ScrollController(),
-                scrollable: true,
+                placeholder: 'Start writing your lesson content...\n\nTip: Use the + button or press Ctrl+K to insert accounting tools.',
                 autoFocus: false,
-                readOnly: false,
                 expands: true,
                 padding: EdgeInsets.zero,
-                placeholder:
-                    'Start writing your lesson content...\n\nTip: Use the + button or press Ctrl+K to insert accounting tools.',
-                customStyles: DefaultStyles(
-                  paragraph: DefaultTextBlockStyle(
-                    TextStyle(
-                      fontSize: 16,
-                      height: 1.5,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                    const VerticalSpacing(8, 8),
-                    const VerticalSpacing(0, 0),
-                    null,
-                    null,
-                  ),
-                ),
                 embedBuilders: [],
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
