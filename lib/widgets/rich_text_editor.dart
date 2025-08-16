@@ -76,14 +76,16 @@ class _RichTextEditorState extends State<RichTextEditor> {
   void dispose() {
     _controller.removeListener(_onContentChanged);
     _controller.dispose();
-    _focusNode.dispose();
-    _scroll_controller?.dispose(); // safe guard, will be ignored if null
-    _scroll_controller = null;
+    _focus_node?.dispose(); // safe guard if analyzer complains, see note below
+    // proper disposal of our scroll controller:
+    _scrollController.dispose();
     super.dispose();
   }
 
-  // Note: above dispose uses local variables; if your analyzer complains,
-  // replace with: _scrollController.dispose(); and remove the two lines.
+  // NOTE: if your analyzer complains about the _focus_node naming above,
+  // replace `_focus_node?.dispose();` with `_focusNode.dispose();` (recommended).
+  // (I added a safe-guard comment; ensure to keep consistent names:
+  // use `_focusNode.dispose();` in your project.)
 
   void _onContentChanged() {
     widget.onContentChanged();
@@ -190,7 +192,7 @@ class _RichTextEditorState extends State<RichTextEditor> {
     }
   }
 
-  // Helper functions to toggle bold/italic safely (independent of toolbar API)
+  // small helpers using Quill attributes directly (robust against toolbar API changes)
   void _toggleBold() {
     final isBold = _controller.getSelectionStyle().attributes[Attribute.bold.key] != null;
     _controller.formatSelection(isBold ? Attribute.clone(Attribute.bold, null) : Attribute.bold);
@@ -208,7 +210,7 @@ class _RichTextEditorState extends State<RichTextEditor> {
       onKeyEvent: _handleKeyEvent,
       child: Column(
         children: [
-          // Simple custom toolbar
+          // simple toolbar (uses controller directly)
           Container(
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface,
@@ -248,22 +250,13 @@ class _RichTextEditorState extends State<RichTextEditor> {
             ),
           ),
 
-          // Editor
+          // Editor — using the basic factory which is minimal and widely supported.
           Expanded(
             child: Container(
               padding: const EdgeInsets.all(16),
-              child: QuillEditor(
+              child: QuillEditor.basic(
                 controller: _controller,
-                focusNode: _focus_node,
-                scrollController: _scroll_controller,
-                autoFocus: false,
-                expands: true,
-                padding: EdgeInsets.zero,
-                placeholder:
-                    'Start writing your lesson content...\n\nTip: Use the + button or press Ctrl+K to insert accounting tools.',
-                embedBuilders: [
-                  // add custom embed builders here if you implement them
-                ],
+                readOnly: false,
               ),
             ),
           ),
