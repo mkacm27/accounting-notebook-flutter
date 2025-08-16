@@ -12,9 +12,13 @@ jobs:
         flutter-version: '3.32.0'
     - run: flutter pub get
 
-    # Êã ÇÓÊÈÏÇá ÇáÎØæÇÊ ÇáŞÏíãÉ ÈåĞå ÇáÎØæÉ ÇáÌÏíÏÉ
-    - name: Build APK with gradlew
-      run: bash android/gradlew assembleRelease
+    # ÇáÎØæÉ ÇáãåãÉ áÖãÇä ÕáÇÍíÉ ÇáÊÔÛíá
+    - name: Make gradlew executable
+      run: chmod +x android/gradlew
+
+    # ÇáÃãÑ ÇáŞíÇÓí æÇáÕÍíÍ áÈäÇÁ ÇáÊØÈíŞ
+    - name: Build APK
+      run: flutter build apk --release
 
     - uses: actions/upload-artifact@v4
       with:
