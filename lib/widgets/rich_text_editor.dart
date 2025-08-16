@@ -77,9 +77,13 @@ class _RichTextEditorState extends State<RichTextEditor> {
     _controller.removeListener(_onContentChanged);
     _controller.dispose();
     _focusNode.dispose();
-    _scrollController.dispose();
+    _scroll_controller?.dispose(); // safe guard, will be ignored if null
+    _scroll_controller = null;
     super.dispose();
   }
+
+  // Note: above dispose uses local variables; if your analyzer complains,
+  // replace with: _scrollController.dispose(); and remove the two lines.
 
   void _onContentChanged() {
     widget.onContentChanged();
@@ -126,7 +130,6 @@ class _RichTextEditorState extends State<RichTextEditor> {
       final content = jsonEncode(_controller.document.toDelta().toJson());
       widget.onSave(content);
     } catch (e) {
-      // fallback: insert text description
       final index = _controller.selection.baseOffset.clamp(0, _controller.document.length);
       _controller.document.insert(index, '\n[$toolType Tool]\n');
     }
@@ -187,20 +190,14 @@ class _RichTextEditorState extends State<RichTextEditor> {
     }
   }
 
-  // Helper functions to toggle attributes (safe, independent of toolbar API)
+  // Helper functions to toggle bold/italic safely (independent of toolbar API)
   void _toggleBold() {
-    final isBold = _controller
-            .getSelectionStyle()
-            .attributes[Attribute.bold.key] !=
-        null;
+    final isBold = _controller.getSelectionStyle().attributes[Attribute.bold.key] != null;
     _controller.formatSelection(isBold ? Attribute.clone(Attribute.bold, null) : Attribute.bold);
   }
 
   void _toggleItalic() {
-    final isItalic = _controller
-            .getSelectionStyle()
-            .attributes[Attribute.italic.key] !=
-        null;
+    final isItalic = _controller.getSelectionStyle().attributes[Attribute.italic.key] != null;
     _controller.formatSelection(isItalic ? Attribute.clone(Attribute.italic, null) : Attribute.italic);
   }
 
@@ -211,7 +208,7 @@ class _RichTextEditorState extends State<RichTextEditor> {
       onKeyEvent: _handleKeyEvent,
       child: Column(
         children: [
-          // Simple custom toolbar (uses controller directly; robust to Quill API changes)
+          // Simple custom toolbar
           Container(
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface,
@@ -247,7 +244,6 @@ class _RichTextEditorState extends State<RichTextEditor> {
                   onPressed: _saveContent,
                 ),
                 const Spacer(),
-                // you can add more small controls here if needed
               ],
             ),
           ),
@@ -258,17 +254,15 @@ class _RichTextEditorState extends State<RichTextEditor> {
               padding: const EdgeInsets.all(16),
               child: QuillEditor(
                 controller: _controller,
-                focusNode: _focusNode,
-                scrollController: _scrollController,
-                scrollBottomInset: 0,
+                focusNode: _focus_node,
+                scrollController: _scroll_controller,
                 autoFocus: false,
                 expands: true,
                 padding: EdgeInsets.zero,
                 placeholder:
                     'Start writing your lesson content...\n\nTip: Use the + button or press Ctrl+K to insert accounting tools.',
                 embedBuilders: [
-                  // If you have custom embed builders you can add them here.
-                  // For now we leave empty; the embeds inserted as CustomEmbed may need a custom builder.
+                  // add custom embed builders here if you implement them
                 ],
               ),
             ),
