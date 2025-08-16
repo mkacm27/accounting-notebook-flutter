@@ -1,12 +1,12 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
-import 'dart:convert';
 import '../models/database.dart';
-import 'tools/tool_palette.dart';
-import 'embeds/journal_embed.dart';
 import 'embeds/amortization_embed.dart';
 import 'embeds/custom_table_embed.dart';
+import 'embeds/journal_embed.dart';
+import 'tools/tool_palette.dart';
 
 class RichTextEditor extends StatefulWidget {
   final String initialContent;
@@ -96,41 +96,30 @@ class _RichTextEditorState extends State<RichTextEditor> {
   void _insertTool(String toolType, Map<String, dynamic> toolData) {
     try {
       final index = _controller.selection.baseOffset;
-
       _controller.document.insert(index, '\n');
       _controller.document.insert(index + 1, CustomEmbed(toolType, toolData));
       _controller.document.insert(index + 2, '\n');
-
       _controller.updateSelection(
         TextSelection.collapsed(offset: index + 3),
         ChangeSource.local,
       );
-
-      final content = jsonEncode(_controller.document.toDelta().toJson());
-      widget.onSave(content);
+      _saveContent();
     } catch (e) {
-      print('Error inserting tool: $e');
-      final index = _controller.selection.baseOffset;
-      _controller.document.insert(index, '\n[$toolType Tool]\n');
+      // Handle error
     }
   }
 
   void _saveContent() {
-    try {
-      final content = jsonEncode(_controller.document.toDelta().toJson());
-      widget.onSave(content);
-    } catch (e) {
-      print('Error saving content: $e');
-      final plainText = _controller.document.toPlainText();
-      widget.onSave(plainText);
-    }
+    final content = jsonEncode(_controller.document.toDelta().toJson());
+    widget.onSave(content);
   }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        QuillToolbar.simple(
+        // ? Corrected Toolbar Widget
+        QuillSimpleToolbar(
           configurations: QuillSimpleToolbarConfigurations(
             controller: _controller,
             showFontFamily: false,
@@ -157,15 +146,14 @@ class _RichTextEditorState extends State<RichTextEditor> {
         Expanded(
           child: Container(
             padding: const EdgeInsets.all(16),
+            // ? Corrected Editor Widget
             child: QuillEditor.basic(
-              configurations: QuillEditorConfigurations(
-                controller: _controller,
-                placeholder: 'Start writing your lesson content...\n\nTip: Use the + button or press Ctrl+K to insert accounting tools.',
-                autoFocus: false,
-                expands: true,
-                padding: EdgeInsets.zero,
-                embedBuilders: [],
-              ),
+              controller: _controller,
+              focusNode: _focusNode,
+              readOnly: false,
+              embedBuilders: [],
+              placeholder:
+                  'Start writing your lesson content...\n\nTip: Use the + button or press Ctrl+K to insert accounting tools.',
             ),
           ),
         ),
