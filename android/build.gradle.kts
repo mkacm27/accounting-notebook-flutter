@@ -1,40 +1,22 @@
-plugins {
-    id("com.android.application")
-    id("kotlin-android")
-    id("dev.flutter.flutter-gradle-plugin")
+allprojects {
+† † repositories {
+† † † † google()
+† † † † mavenCentral()
+† † }
 }
 
-android {
-    namespace = "com.accountingnotebook.app"
-    compileSdk = flutter.compileSdkVersion
-    
-    // ? Â–« ÂÊ «·”ÿ— «·„Â„ «·–Ì ÌÕ· „‘ﬂ·… NDK
-    ndkVersion = "27.0.12077973"
+val newBuildDir: Directory = rootProject.layout.buildDirectory.dir("../../build").get()
+rootProject.layout.buildDirectory.value(newBuildDir)
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
-
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
-
-    defaultConfig {
-        applicationId = "com.accountingnotebook.app"
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
-    }
-
-    buildTypes {
-        release {
-            signingConfig = signingConfigs.getByName("debug")
-        }
-    }
+subprojects {
+† † val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
+† † project.layout.buildDirectory.value(newSubprojectBuildDir)
+}
+subprojects {
+† † project.evaluationDependsOn(":app")
 }
 
-flutter {
-    source = "../.."
+tasks.register<Delete>("clean") {
+† † delete(rootProject.layout.buildDirectory)
 }
+"
