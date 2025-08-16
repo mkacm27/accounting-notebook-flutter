@@ -76,16 +76,10 @@ class _RichTextEditorState extends State<RichTextEditor> {
   void dispose() {
     _controller.removeListener(_onContentChanged);
     _controller.dispose();
-    _focus_node?.dispose(); // safe guard if analyzer complains, see note below
-    // proper disposal of our scroll controller:
+    _focusNode.dispose();
     _scrollController.dispose();
     super.dispose();
   }
-
-  // NOTE: if your analyzer complains about the _focus_node naming above,
-  // replace `_focus_node?.dispose();` with `_focusNode.dispose();` (recommended).
-  // (I added a safe-guard comment; ensure to keep consistent names:
-  // use `_focusNode.dispose();` in your project.)
 
   void _onContentChanged() {
     widget.onContentChanged();
@@ -250,13 +244,15 @@ class _RichTextEditorState extends State<RichTextEditor> {
             ),
           ),
 
-          // Editor — using the basic factory which is minimal and widely supported.
+          // Editor — use basic factory with only supported arguments
           Expanded(
             child: Container(
               padding: const EdgeInsets.all(16),
               child: QuillEditor.basic(
                 controller: _controller,
-                readOnly: false,
+                // QuillEditor.basic typically accepts only controller and readOnly in some versions.
+                // For broad compatibility we pass only controller; if your version needs readOnly,
+                // you can add: readOnly: false
               ),
             ),
           ),
