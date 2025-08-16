@@ -11,8 +11,11 @@ jobs:
       with:
         flutter-version: '3.32.0'
     - run: flutter pub get
+    # ÃÖİ åĞå ÇáÎØæÉ ÇáÌÏíÏÉ åäÇ
+    - name: Make gradlew executable
+      run: chmod +x android/gradlew
     - run: flutter build apk --release
-    - uses: actions/upload-artifact@v4  # <-- This line is updated
+    - uses: actions/upload-artifact@v4
       with:
         name: app-release-apk
         path: build/app/outputs/flutter-apk/app-release.apk
