@@ -1,7 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
-import 'dart:convert';
 import '../models/database.dart';
 import 'tools/tool_palette.dart';
 import 'embeds/journal_embed.dart';
@@ -31,7 +31,6 @@ class RichTextEditor extends StatefulWidget {
 class _RichTextEditorState extends State<RichTextEditor> {
   late QuillController _controller;
   final FocusNode _focusNode = FocusNode();
-  bool _isToolPaletteVisible = false;
 
   @override
   void initState() {
@@ -55,7 +54,6 @@ class _RichTextEditorState extends State<RichTextEditor> {
       document: document,
       selection: const TextSelection.collapsed(offset: 0),
     );
-
     _controller.addListener(_onContentChanged);
   }
 
@@ -81,162 +79,77 @@ class _RichTextEditorState extends State<RichTextEditor> {
   }
 
   void _showToolPalette() {
-    setState(() {
-      _isToolPaletteVisible = true;
-    });
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => ToolPalette(
         onToolSelected: _insertTool,
-        onClose: () {
-          setState(() {
-            _isToolPaletteVisible = false;
-          });
-          Navigator.pop(context);
-        },
+        onClose: () => Navigator.pop(context),
       ),
-    ).then((_) {
-      setState(() {
-        _isToolPaletteVisible = false;
-      });
-    });
+    );
   }
 
   void _insertTool(String toolType, Map<String, dynamic> toolData) {
-    try {
-      final index = _controller.selection.baseOffset;
-
-      _controller.document.insert(index, '\n');
-      _controller.document.insert(index + 1, CustomEmbed(toolType, toolData));
-      _controller.document.insert(index + 2, '\n');
-
-      _controller.updateSelection(
-        TextSelection.collapsed(offset: index + 3),
-        ChangeSource.local,
-      );
-
-      final content = jsonEncode(_controller.document.toDelta().toJson());
-      widget.onSave(content);
-    } catch (e) {
-      print('Error inserting tool: $e');
-      final index = _controller.selection.baseOffset;
-      _controller.document.insert(index, '\n[$toolType Tool]\n');
-    }
+    final index = _controller.selection.baseOffset;
+    _controller.document.insert(index, '\n');
+    _controller.document.insert(index + 1, CustomEmbed(toolType, toolData));
+    _controller.document.insert(index + 2, '\n');
+    _controller.updateSelection(
+        TextSelection.collapsed(offset: index + 3), ChangeSource.local);
+    _saveContent();
   }
 
   void _saveContent() {
-    try {
-      final content = jsonEncode(_controller.document.toDelta().toJson());
-      widget.onSave(content);
-    } catch (e) {
-      print('Error saving content: $e');
-      final plainText = _controller.document.toPlainText();
-      widget.onSave(plainText);
-    }
-  }
-
-  bool _handleKeyEvent(KeyEvent event) {
-    if (event is KeyDownEvent) {
-      if (event.logicalKey == LogicalKeyboardKey.keyK &&
-          HardwareKeyboard.instance.isControlPressed) {
-        _showToolPalette();
-        return true;
-      }
-      if (event.logicalKey == LogicalKeyboardKey.keyS &&
-          HardwareKeyboard.instance.isControlPressed) {
-        _saveContent();
-        return true;
-      }
-    }
-    return false;
-  }
-
-  Widget _buildCustomEmbed(CustomEmbed embed) {
-    switch (embed.type) {
-      case 'journal':
-        return JournalEmbed(
-          data: embed.data,
-          onEdit: (newData) => _insertTool('journal', newData),
-        );
-      case 'amortization':
-        return AmortizationEmbed(
-          data: embed.data,
-          onEdit: (newData) => _insertTool('amortization', newData),
-        );
-      case 'customTable':
-        return CustomTableEmbed(
-          data: embed.data,
-          onEdit: (newData) => _insertTool('customTable', newData),
-        );
-      default:
-        return Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.grey[200],
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Text('Unknown embed type: ${embed.type}'),
-        );
-    }
+    final content = jsonEncode(_controller.document.toDelta().toJson());
+    widget.onSave(content);
   }
 
   @override
   Widget build(BuildContext context) {
-    return KeyboardListener(
-      focusNode: FocusNode(),
-      onKeyEvent: _handleKeyEvent,
-      child: Column(
-        children: [
-          // Toolbar
-          Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              border: Border(
-                bottom: BorderSide(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                ),
+    return Column(
+      children: [
+        // ? The Corrected Toolbar
+        QuillToolbar(
+          configurations: QuillToolbarConfigurations(
+            controller: _controller,
+            showFontFamily: false,
+            showFontSize: false,
+            showSubscript: false,
+            showSuperscript: false,
+            showColorButton: false,
+            showBackgroundColorButton: false,
+            showSearchButton: false,
+            customButtons: [
+              QuillToolbarCustomButton(
+                icon: Icons.add_circle_outline,
+                tooltip: 'Insert Tool (Ctrl+K)',
+                onPressed: _showToolPalette,
               ),
-            ),
-            child: QuillSimpleToolbar(
-              controller: _controller,
-              children: [
-                QuillToolbarButton.bold(controller: _controller),
-                QuillToolbarButton.italic(controller: _controller),
-                QuillCustomButton(
-                  icon: Icons.add_circle_outline,
-                  tooltip: 'Insert Tool (Ctrl+K)',
-                  onPressed: _showToolPalette,
-                ),
-                QuillCustomButton(
-                  icon: Icons.save,
-                  tooltip: 'Save (Ctrl+S)',
-                  onPressed: _saveContent,
-                ),
-              ],
-            ),
+              QuillToolbarCustomButton(
+                icon: Icons.save,
+                tooltip: 'Save (Ctrl+S)',
+                onPressed: _saveContent,
+              ),
+            ],
           ),
-          // Editor
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              child: QuillEditor(
+        ),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            // ? The Corrected Editor
+            child: QuillEditor.basic(
+              configurations: QuillEditorBasicConfigurations(
                 controller: _controller,
-                focusNode: _focusNode,
-                scrollController: ScrollController(),
-                scrollBottomInset: 0,
-                autoFocus: false,
-                expands: true,
-                padding: EdgeInsets.zero,
+                readOnly: false,
+                embedBuilders: [],
                 placeholder:
                     'Start writing your lesson content...\n\nTip: Use the + button or press Ctrl+K to insert accounting tools.',
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
