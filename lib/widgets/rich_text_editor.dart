@@ -1,12 +1,14 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import '../models/database.dart';
 import 'tools/tool_palette.dart';
-import 'embeds/journal_embed.dart';
-import 'embeds/amortization_embed.dart';
-import 'embeds/custom_table_embed.dart';
+
+// Note: Embed builders are not yet implemented in this version of the code,
+// but the foundation is here.
+// import 'embeds/journal_embed.dart';
+// import 'embeds/amortization_embed.dart';
+// import 'embeds/custom_table_embed.dart';
 
 class RichTextEditor extends StatefulWidget {
   final String initialContent;
@@ -31,6 +33,7 @@ class RichTextEditor extends StatefulWidget {
 class _RichTextEditorState extends State<RichTextEditor> {
   late QuillController _controller;
   final FocusNode _focusNode = FocusNode();
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -44,16 +47,15 @@ class _RichTextEditorState extends State<RichTextEditor> {
       if (widget.initialContent.isEmpty || widget.initialContent == '[]') {
         document = Document();
       } else {
-        document = Document.fromJson(jsonDecode(widget.initialContent));
+        final decoded = jsonDecode(widget.initialContent);
+        document = Document.fromJson(decoded);
       }
     } catch (e) {
-      document = Document();
+      document = Document()..insert(0, 'Error loading content.');
     }
-
     _controller = QuillController(
-      document: document,
-      selection: const TextSelection.collapsed(offset: 0),
-    );
+        document: document,
+        selection: const TextSelection.collapsed(offset: 0));
     _controller.addListener(_onContentChanged);
   }
 
@@ -71,6 +73,7 @@ class _RichTextEditorState extends State<RichTextEditor> {
     _controller.removeListener(_onContentChanged);
     _controller.dispose();
     _focusNode.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -109,43 +112,39 @@ class _RichTextEditorState extends State<RichTextEditor> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // ? The Corrected Toolbar
-        QuillToolbar(
-          configurations: QuillToolbarConfigurations(
+        QuillToolbar.simple(
+          configurations: QuillSimpleToolbarConfigurations(
             controller: _controller,
             showFontFamily: false,
             showFontSize: false,
-            showSubscript: false,
-            showSuperscript: false,
-            showColorButton: false,
-            showBackgroundColorButton: false,
-            showSearchButton: false,
             customButtons: [
-              QuillToolbarCustomButton(
-                icon: Icons.add_circle_outline,
-                tooltip: 'Insert Tool (Ctrl+K)',
+              QuillToolbarCustomButtonOptions(
+                icon: const Icon(Icons.add_circle_outline),
+                tooltip: 'Insert Tool',
                 onPressed: _showToolPalette,
               ),
-              QuillToolbarCustomButton(
-                icon: Icons.save,
-                tooltip: 'Save (Ctrl+S)',
+              QuillToolbarCustomButtonOptions(
+                icon: const Icon(Icons.save),
+                tooltip: 'Save',
                 onPressed: _saveContent,
               ),
             ],
           ),
         ),
+        const Divider(height: 1),
         Expanded(
           child: Container(
-            padding: const EdgeInsets.all(16),
-            // ? The Corrected Editor
-            child: QuillEditor.basic(
-              configurations: QuillEditorBasicConfigurations(
+            padding: const EdgeInsets.all(16.0),
+            child: QuillEditor(
+              configurations: QuillEditorConfigurations(
                 controller: _controller,
                 readOnly: false,
-                embedBuilders: [],
                 placeholder:
                     'Start writing your lesson content...\n\nTip: Use the + button or press Ctrl+K to insert accounting tools.',
+                embedBuilders: [], // For custom embedded widgets
               ),
+              focusNode: _focusNode,
+              scrollController: _scrollController,
             ),
           ),
         ),
