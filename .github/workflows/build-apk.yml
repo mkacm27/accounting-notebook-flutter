@@ -1,25 +1,36 @@
 name: Build APK
+
 on:
   push:
     branches: [ main ]
+
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
+
     - uses: subosito/flutter-action@v2
       with:
         flutter-version: '3.32.0'
-    - run: flutter pub get
 
-    # Â–Â ÂÌ «·ŒÿÊ… «·√”«”Ì… ·Õ· „‘ﬂ·… «·≈–‰
+    - name: Install dependencies
+      run: flutter pub get
+
+    # ≈‰‘«¡ „Ã·œ android ·Ê ‰«ﬁ’
+    - name: Ensure android folder exists
+      run: flutter create .
+
+    # ≈’·«Õ gradlew
     - name: Make gradlew executable
       run: chmod +x android/gradlew
 
-    # Â–« ÂÊ «·√„— «·’ÕÌÕ Ê«·ﬁÌ«”Ì ·»‰«¡ «· ÿ»Ìﬁ
+    # »‰«¡ «· ÿ»Ìﬁ
     - name: Build APK
       run: flutter build apk --release
 
+    # Õ›Ÿ «·‹ APK ﬂ‹ artifact
     - uses: actions/upload-artifact@v4
       with:
         name: app-release-apk
